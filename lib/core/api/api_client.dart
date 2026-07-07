@@ -7,21 +7,18 @@ class ApiClient {
 
   // Constructor
   ApiClient()
-      : dio = Dio(
-          BaseOptions(
-            // 1. حطينا اللينك بتاع Render
-baseUrl: 'http://127.0.0.1:3000',            
-            // 2. زودنا الوقت لـ 60 ثانية عشان مشكلة الـ Cold Start في السيرفرات المجانية
-            connectTimeout: const Duration(seconds: 60),
-            receiveTimeout: const Duration(seconds: 60),
-            
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          ),
+    : dio = Dio(
+        BaseOptions(
+          // 1. حطينا اللينك بتاع Render
+          baseUrl: 'http://192.168.1.8:3000',
+          // 2. زودنا الوقت لـ 60 ثانية عشان مشكلة الـ Cold Start في السيرفرات المجانية
+          connectTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
+
+          headers: {'Content-Type': 'application/json'},
         ),
-        secureStorage = const FlutterSecureStorage() {
-    
+      ),
+      secureStorage = const FlutterSecureStorage() {
     // بننده على الـ Middlewares بتاعتنا أول ما الكلاس يشتغل
     _initializeInterceptors();
   }
@@ -31,7 +28,6 @@ baseUrl: 'http://127.0.0.1:3000',
       InterceptorsWrapper(
         // 1. onRequest: ده الـ Middleware اللي بيشتغل قبل ما الريكويست يروح للباك إيند
         onRequest: (options, handler) async {
-          
           // بنقرا التوكن المتسيف في الموبايل
           final token = await secureStorage.read(key: 'jwt_token');
 
@@ -56,7 +52,7 @@ baseUrl: 'http://127.0.0.1:3000',
             print('Unauthorized: Token might be expired. Need to logout.');
             // قدام هنحط هنا كود يمسح التوكن ويطرد اليوزر لشاشة اللوجين
           }
-          
+
           return handler.next(e);
         },
       ),

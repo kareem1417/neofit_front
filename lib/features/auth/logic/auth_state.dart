@@ -17,8 +17,23 @@ class AuthError extends AuthState {
   final String error;
   AuthError({required this.error});
 }
+
 class SportsLoaded extends AuthState {
   final List<dynamic> sports;
-  
+
   SportsLoaded({required this.sports});
+}
+
+class OnboardingComplete extends AuthState {
+  final String message;
+  OnboardingComplete({this.message = 'Onboarding completed'});
+}
+
+// 💡 ADDED: This is the missing state that was causing the error in auth_cubit.dart
+class InitialSnapshotLoading extends AuthState {}
+
+class InitialSnapshotLoaded extends AuthState {
+  final dynamic snapshot;
+
+  InitialSnapshotLoaded({required this.snapshot});
 }

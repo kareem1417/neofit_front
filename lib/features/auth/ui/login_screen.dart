@@ -1,31 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../logic/user/user_cubit.dart';
-import '../../../logic/user/user_state.dart';
-import 'signup1_screen.dart';
-import '../profile/main_dashboard_screen.dart';
+import '../logic/auth_cubit.dart';
+import '../logic/auth_state.dart';
+import 'signup_screen.dart';
+import '../../profile/ui/profile_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final cubit = context.read<UserCubit>();
+    final cubit = context.read<AuthCubit>();
     final double screenHeight = MediaQuery.of(context).size.height;
 
-    return BlocConsumer<UserCubit, UserState>(
+    return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state is UserSuccess) {
+        if (state is AuthSuccess) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const MainDashboardScreen(),
+              builder: (context) => const ProfileScreen(),
             ),
           );
-        } else if (state is UserError) {
+        } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.message),
+              content: Text(state.error),
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -55,7 +71,7 @@ class LoginScreen extends StatelessWidget {
                       ),
                       child: IntrinsicHeight(
                         child: Form(
-                          key: cubit.loginFormKey,
+                          key: _formKey,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -125,7 +141,7 @@ class LoginScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 8),
                               TextFormField(
-                                controller: cubit.signInEmail,
+                                controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
                                 style: const TextStyle(
                                   color: Colors.white,
@@ -206,7 +222,7 @@ class LoginScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 8),
                               TextFormField(
-                                controller: cubit.signInPassword,
+                                controller: _passwordController,
                                 obscureText: true,
                                 style: const TextStyle(
                                   color: Colors.white,
@@ -260,11 +276,14 @@ class LoginScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 32),
                               ElevatedButton(
-                                onPressed: state is UserLoading
+                                onPressed: state is AuthLoading
                                     ? null
                                     : () {
-                                        if (cubit.loginFormKey.currentState!.validate()) {
-                                          cubit.signIn();
+                                        if (_formKey.currentState!.validate()) {
+                                          cubit.loginUser(
+                                            _emailController.text.trim(),
+                                            _passwordController.text,
+                                          );
                                         }
                                       },
                                 style: ElevatedButton.styleFrom(
@@ -277,7 +296,7 @@ class LoginScreen extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
-                                child: state is UserLoading
+                                child: state is AuthLoading
                                     ? const SizedBox(
                                         height: 20,
                                         width: 20,
