@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../logic/user_cubit.dart';
 import '../logic/user_state.dart';
-import 'athlete_details_screen.dart';
+import '../../auth/logic/auth_cubit.dart';
 import 'AnotherAthleteDetailsScreen.dart';
 
 class CreateProfileScreen extends StatefulWidget {
@@ -43,9 +43,12 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     final cubit = context.read<UserCubit>();
 
     return BlocConsumer<UserCubit, UserState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is UserSuccess) {
-          // ✅ Only navigate when profile is complete
+          await context.read<AuthCubit>().fetchDashboard();
+
+          if (!context.mounted) return;
+
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -183,9 +186,9 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                                                 height: 18,
                                                 child:
                                                     CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Color(0xFF070B0D),
-                                                    ),
+                                                  strokeWidth: 2,
+                                                  color: Color(0xFF070B0D),
+                                                ),
                                               )
                                             : const Icon(
                                                 Icons.camera_alt_outlined,
@@ -212,8 +215,20 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                                 ),
                               ),
                             const SizedBox(height: 48),
-
-                            // Bio
+                            _buildLabel('FULL NAME *'),
+                            const SizedBox(height: 8),
+                            _buildTextField(
+                              controller: cubit.fullNameController,
+                              hint: 'John Doe',
+                              prefixIcon: Icons.person_outline,
+                              // ضيف الـ validator ده هنا
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Full name is required';
+                                }
+                                return null;
+                              },
+                            ),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -244,17 +259,18 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                                 }
                                 return null;
                               },
-                              buildCounter:
-                                  (
-                                    context, {
-                                    required currentLength,
-                                    required isFocused,
-                                    maxLength,
-                                  }) => null,
+                              buildCounter: (
+                                context, {
+                                required currentLength,
+                                required isFocused,
+                                maxLength,
+                              }) =>
+                                  null,
                               decoration: _inputDecoration(
                                 hint:
                                     'Tell the community a little about yourself...',
-                              ).copyWith(contentPadding: const EdgeInsets.all(16)),
+                              ).copyWith(
+                                  contentPadding: const EdgeInsets.all(16)),
                             ),
                             const SizedBox(height: 32),
 
@@ -291,8 +307,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                                   ? null
                                   : () {
                                       if (cubit
-                                          .createProfileFormKey
-                                          .currentState!
+                                          .createProfileFormKey.currentState!
                                           .validate()) {
                                         cubit.createProfile();
                                       }
@@ -369,10 +384,12 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     required TextEditingController controller,
     required String hint,
     IconData? prefixIcon,
+    String? Function(String?)? validator, // ضفنا السطر ده
   }) {
     return TextFormField(
       controller: controller,
       style: const TextStyle(color: Colors.white, fontSize: 15),
+      validator: validator, // وضفنا السطر ده
       decoration: _inputDecoration(hint: hint, prefixIcon: prefixIcon),
     );
   }

@@ -64,7 +64,10 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     try {
       final response = await authService.login(email, password);
-      final token = response['token'];
+
+      // ✅ التعديل هنا: جيب التوكن بنفس الطريقة اللي بتجيبه بيها في الـ Register
+      final token = response['data']['tokens']['accessToken'];
+
       await secureStorage.write(key: 'jwt_token', value: token);
       emit(AuthSuccess(message: 'Logged in successfully'));
     } catch (e) {
@@ -82,9 +85,8 @@ class AuthCubit extends Cubit<AuthState> {
     _role = role.toLowerCase();
   }
 
-  void saveProfileData({required String username, required String fullName}) {
+  void saveProfileData({required String username}) {
     this.username = username;
-    this.fullName = fullName;
   }
 
   void saveDob(String dob) {
@@ -98,10 +100,7 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> submitRegistration({required String dateOfBirth}) async {
-    if (_email == null ||
-        _password == null ||
-        username == null ||
-        fullName == null) {
+    if (_email == null || _password == null || username == null) {
       emit(AuthError(error: 'Missing required registration data.'));
       return;
     }
@@ -110,7 +109,6 @@ class AuthCubit extends Cubit<AuthState> {
 
     try {
       final response = await authService.register(
-        fullName: fullName!,
         username: username!,
         email: _email!,
         password: _password!,

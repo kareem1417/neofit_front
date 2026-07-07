@@ -94,10 +94,13 @@ class _AthleteDetailsScreenState extends State<AthleteDetailsScreen> {
     final cubit = context.watch<AuthCubit>();
 
     return BlocConsumer<AuthCubit, AuthState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is AuthSuccess &&
             state.message.contains('Onboarding completed')) {
-          // لما يخلص Onboarding نوديه على شاشة البروفايل الرئيسية
+          await context.read<AuthCubit>().fetchDashboard();
+
+          if (!context.mounted) return;
+
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const ProfileScreen()),
@@ -218,7 +221,6 @@ class _AthleteDetailsScreenState extends State<AthleteDetailsScreen> {
                         style: TextStyle(fontSize: 13, color: Colors.white60),
                       ),
                       const SizedBox(height: 24),
-
                       ...state.tests.map((test) {
                         final id = test['id'];
                         // بنجهز كنترولر لكل تيست لو مش موجود
@@ -245,19 +247,19 @@ class _AthleteDetailsScreenState extends State<AthleteDetailsScreen> {
                                 validator: (val) => val == null || val.isEmpty
                                     ? 'Required'
                                     : null,
-                                decoration: _inputDecoration(hint: '0.0')
-                                    .copyWith(
-                                      suffixIcon: Padding(
-                                        padding: const EdgeInsets.all(16.0),
-                                        child: Text(
-                                          test['unit'] ?? '',
-                                          style: const TextStyle(
-                                            color: Colors.white24,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
+                                decoration:
+                                    _inputDecoration(hint: '0.0').copyWith(
+                                  suffixIcon: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Text(
+                                      test['unit'] ?? '',
+                                      style: const TextStyle(
+                                        color: Colors.white24,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -334,14 +336,14 @@ class _AthleteDetailsScreenState extends State<AthleteDetailsScreen> {
   // === Helper Widgets ===
 
   Widget _buildLabel(String text) => Text(
-    text,
-    style: const TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.bold,
-      color: Colors.white24,
-      letterSpacing: 0.8,
-    ),
-  );
+        text,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: Colors.white24,
+          letterSpacing: 0.8,
+        ),
+      );
 
   Widget _buildDynamicDropdown<T>({
     required T? value,
@@ -391,9 +393,8 @@ class _AthleteDetailsScreenState extends State<AthleteDetailsScreen> {
               onTap: () => setState(() => _selectedLevel = level),
               child: Container(
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF1E2427)
-                      : Colors.transparent,
+                  color:
+                      isSelected ? const Color(0xFF1E2427) : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,

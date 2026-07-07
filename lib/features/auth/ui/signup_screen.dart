@@ -16,7 +16,7 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final _fullNameController = TextEditingController();
+  //final _fullNameController = TextEditingController();
   final _usernameController = TextEditingController();
   final _dobController = TextEditingController();
   final _emailController = TextEditingController();
@@ -26,7 +26,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
-    _fullNameController.dispose();
+    //_fullNameController.dispose();
     _usernameController.dispose();
     _dobController.dispose();
     _emailController.dispose();
@@ -40,10 +40,11 @@ class _SignupScreenState extends State<SignupScreen> {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         print("CURRENT STATE => ${state.runtimeType}");
-        if (state is AuthSuccess) {
+        if (state is AuthSuccess && state.message.contains('Account created')) {
           print("NAVIGATING");
-          // ✅ Navigate on success
-          Navigator.pushReplacement(
+          // ✅ Navigate on success — clear the entire stack to prevent
+          // the LoginScreen listener from reacting to future AuthSuccess states
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
               builder: (_) => BlocProvider(
@@ -52,6 +53,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: const CreateProfileScreen(),
               ),
             ),
+            (route) => false,
           );
         } else if (state is AuthError) {
           // ❌ Show error message
@@ -164,32 +166,32 @@ class _SignupScreenState extends State<SignupScreen> {
                               const SizedBox(height: 28),
 
                               // Full Name
-                              Text(
-                                'FULL NAME',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white.withValues(alpha: 0.4),
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              TextFormField(
-                                controller: _fullNameController,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                ),
-                                validator: (val) =>
-                                    val == null || val.trim().isEmpty
-                                    ? 'Required'
-                                    : null,
-                                decoration: _inputDecoration(
-                                  hint: 'John Doe',
-                                  icon: Icons.person_outline,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
+                              // Text(
+                              //   'FULL NAME',
+                              //   style: TextStyle(
+                              //     fontSize: 11,
+                              //     fontWeight: FontWeight.w700,
+                              //     color: Colors.white.withValues(alpha: 0.4),
+                              //     letterSpacing: 0.8,
+                              //   ),
+                              // ),
+                              // const SizedBox(height: 8),
+                              // TextFormField(
+                              //   controller: _fullNameController,
+                              //   style: const TextStyle(
+                              //     color: Colors.white,
+                              //     fontSize: 15,
+                              //   ),
+                              //   validator: (val) =>
+                              //       val == null || val.trim().isEmpty
+                              //       ? 'Required'
+                              //       : null,
+                              //   decoration: _inputDecoration(
+                              //     hint: 'John Doe',
+                              //     icon: Icons.person_outline,
+                              //   ),
+                              // ),
+                              // const SizedBox(height: 24),
 
                               // Username
                               Text(
@@ -420,12 +422,13 @@ class _SignupScreenState extends State<SignupScreen> {
                                                   _passwordController.text,
                                               role: _selectedRole,
                                             );
+
+                                            // ✅ رجعنا دي عشان نحفظ اليوزرنيم
                                             cubit.saveProfileData(
                                               username:
                                                   _usernameController.text,
-                                              fullName:
-                                                  _fullNameController.text,
                                             );
+
                                             cubit.saveDob(_dobController.text);
 
                                             // ✅ Register the user

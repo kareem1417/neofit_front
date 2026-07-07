@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+// اتأكد إن مسار الـ HomeScreen أو الـ MainLayoutScreen صح
+import '../../main_layout/ui/main_dashboard_screen.dart';
 import '../logic/auth_cubit.dart';
 import '../logic/auth_state.dart';
 import 'signup_screen.dart';
-import '../../profile/ui/profile_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -32,11 +34,14 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          Navigator.pushReplacement(
+          // ✅ تم مسح الـ BlocProvider ونقلنا للشاشة الرئيسية مباشر
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (context) => const ProfileScreen(),
+              builder: (_) =>
+                  const MainDashboardScreen(), // أو MainLayoutScreen لو عملتها
             ),
+            (route) => false,
           );
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -55,10 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 gradient: RadialGradient(
                   center: Alignment(0.0, -0.9),
                   radius: 1.2,
-                  colors: [
-                    Color(0xFF0F1E21),
-                    Color(0xFF070B0D),
-                  ],
+                  colors: [Color(0xFF0F1E21), Color(0xFF070B0D)],
                 ),
               ),
               child: LayoutBuilder(
@@ -195,7 +197,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 24),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     'PASSWORD',
@@ -289,9 +292,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF00E5C1),
                                   foregroundColor: const Color(0xFF070B0D),
-                                  shadowColor: const Color(0xFF00E5C1).withValues(alpha: 0.3),
+                                  shadowColor: const Color(
+                                    0xFF00E5C1,
+                                  ).withValues(alpha: 0.3),
                                   elevation: 8,
-                                  padding: const EdgeInsets.symmetric(vertical: 18),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 18,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
@@ -306,7 +313,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                       )
                                     : const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Text(
                                             'Log In',
@@ -317,16 +325,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ),
                                           ),
                                           SizedBox(width: 8),
-                                          Icon(
-                                            Icons.arrow_forward,
-                                            size: 18,
-                                          ),
+                                          Icon(Icons.arrow_forward, size: 18),
                                         ],
                                       ),
                               ),
                               const Spacer(),
                               Padding(
-                                padding: const EdgeInsets.only(bottom: 24.0, top: 24.0),
+                                padding: const EdgeInsets.only(
+                                  bottom: 24.0,
+                                  top: 24.0,
+                                ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -343,7 +351,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => const SignupScreen(),
+                                            builder: (context) =>
+                                                const SignupScreen(),
                                           ),
                                         );
                                       },

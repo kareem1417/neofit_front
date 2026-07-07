@@ -7,6 +7,11 @@ import 'features/auth/data/auth_service.dart';
 import 'features/auth/logic/auth_cubit.dart';
 import 'features/auth/ui/login_screen.dart';
 
+// ✅ ضفنا مسار الـ UserCubit هنا
+import 'features/onboarding/logic/user_cubit.dart';
+import 'features/home/data/social_service.dart';
+import 'features/home/logic/social_cubit.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -15,11 +20,20 @@ void main() {
   const secureStorage = FlutterSecureStorage();
 
   runApp(
-    MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (_) => AuthCubit(authService, secureStorage)),
-      ],
-      child: const NeoFitApp(),
+    RepositoryProvider<ApiClient>.value(
+      value: apiClient,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => AuthCubit(authService, secureStorage)),
+          BlocProvider(create: (_) => UserCubit(apiClient: apiClient)),
+          BlocProvider<SocialCubit>(
+            create: (_) => SocialCubit(
+              socialService: SocialService(apiClient: apiClient),
+            ),
+          ),
+        ],
+        child: const NeoFitApp(),
+      ),
     ),
   );
 }

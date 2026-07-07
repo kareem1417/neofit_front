@@ -32,7 +32,7 @@ class AuthService {
   // 2. Register Method
   Future<Map<String, dynamic>> register({
     required String username,
-    required String fullName,
+    // required String fullName,
     required String email,
     required String password,
     required String dateOfBirth,
@@ -43,7 +43,7 @@ class AuthService {
         '/api/auth/register',
         data: {
           'username': username,
-          'full_name': fullName,
+          //'full_name': fullName,
           'email': email,
           'password': password,
           'date_of_birth': dateOfBirth,

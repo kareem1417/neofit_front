@@ -20,6 +20,7 @@ class UserCubit extends Cubit<UserState> {
   final TextEditingController roleModelsController = TextEditingController();
   final TextEditingController instagramController = TextEditingController();
   final TextEditingController youtubeController = TextEditingController();
+  final fullNameController = TextEditingController();
 
   // Profile image
   Uint8List? pickedImageBytes;
@@ -114,6 +115,7 @@ class UserCubit extends Cubit<UserState> {
 
       final profileData = {
         'bio': bioController.text.trim(),
+        "full_name": fullNameController.text,
         'role_models': roleModelsList,
         'social_links': socialLinks,
       };

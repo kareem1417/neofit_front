@@ -1,3 +1,6 @@
+import '../../../core/api/api_client.dart';
+import 'models/snapshot_model.dart';
+
 class ProfileService {
   final ApiClient apiClient;
 
@@ -11,8 +14,7 @@ class ProfileService {
     return SnapshotModel.fromJson(response.data["data"]);
   }
 
-  Future<void> createSnapshot(
-      List<Map<String, dynamic>> testValues) async {
+  Future<void> createSnapshot(List<Map<String, dynamic>> testValues) async {
     await apiClient.dio.post(
       '/api/users/snapshots',
       data: {

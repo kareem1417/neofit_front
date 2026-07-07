@@ -58,7 +58,7 @@ class _AnotherAthleteDetailsScreenState
       listener: (context, state) {
         if (state is AuthSuccess && state.message.contains('Metrics saved')) {
           // 📌 بعد ما يحفظ الـ Metrics بنجاح، يروح لشاشة الرياضة والاختبارات
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => const AthleteDetailsScreen(),
