@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../auth/logic/auth_cubit.dart';
 import '../../home/ui/home_screen.dart';
 import '../../profile/ui/profile_screen.dart';
+import '../../programs/ui/programs_screen.dart';
+import '../../explore/ui/tabs/explore_screen.dart';
 
 class MainDashboardScreen extends StatefulWidget {
   const MainDashboardScreen({super.key});
@@ -28,12 +30,8 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
 
   List<Widget> get _screens => [
         const HomeScreen(),
-        const Center(
-          child: Text('EXPLORE', style: TextStyle(color: Colors.white)),
-        ),
-        const Center(
-          child: Text('PROGRAMS', style: TextStyle(color: Colors.white)),
-        ),
+        const ExploreScreen(),
+        const ProgramsScreen(),
         const Center(
           child: Text('RANK', style: TextStyle(color: Colors.white)),
         ),

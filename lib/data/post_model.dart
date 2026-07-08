@@ -16,13 +16,14 @@ class PostAuthor {
 
 class PostModel {
   final String? id;
-  final String? content;
+  String? content;
   final String? imagePath;
   int? likesCount;
   int? commentsCount;
   bool? isLikedByMe;
   final DateTime? createdAt;
   final PostAuthor? author;
+  final String? authorId;
 
   PostModel({
     this.id,
@@ -33,6 +34,7 @@ class PostModel {
     this.isLikedByMe,
     this.createdAt,
     this.author,
+    this.authorId,
   });
 
   factory PostModel.fromJson(Map<String, dynamic> json) {
@@ -50,6 +52,7 @@ class PostModel {
               : null,
       author:
           json['author'] != null ? PostAuthor.fromJson(json['author']) : null,
+      authorId: json['author_id'] ?? json['authorId'] ?? json['author']?['id'],
     );
   }
 }

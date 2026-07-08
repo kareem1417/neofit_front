@@ -69,4 +69,43 @@ class SocialCubit extends Cubit<SocialState> {
       emit(SocialError(e.toString()));
     }
   }
+
+  Future<PostModel> editPost(String postId, String content) async {
+    try {
+      final updatedPost = await socialService.editPost(postId, content);
+      emit(SocialPostUpdated(updatedPost));
+      return updatedPost;
+    } catch (e) {
+      emit(SocialError(e.toString()));
+      rethrow;
+    }
+  }
+
+  Future<void> deletePost(String postId) async {
+    try {
+      await socialService.deletePost(postId);
+      emit(SocialPostDeleted(postId));
+    } catch (e) {
+      emit(SocialError(e.toString()));
+      rethrow;
+    }
+  }
+
+  Future<CommentModel> editComment(
+      String postId, String commentId, String content) async {
+    try {
+      return await socialService.editComment(postId, commentId, content);
+    } catch (e) {
+      throw Exception('Failed to edit comment');
+    }
+  }
+
+  Future<void> deleteComment(String postId, String commentId) async {
+    try {
+      await socialService.deleteComment(postId, commentId);
+    } catch (e) {
+      throw Exception('Failed to delete comment');
+    }
+  }
 }
+

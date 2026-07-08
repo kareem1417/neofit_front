@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 // ✅ Correct imports
+import '../../auth/logic/auth_cubit.dart';
 import '../../onboarding/logic/user_cubit.dart';
 import '../../onboarding/logic/user_state.dart';
 import '../logic/social_cubit.dart';
@@ -97,6 +98,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Post created successfully!'),
+                        backgroundColor: Color(0xFF00E5C1),
+                      ),
+                    );
+                  }
+                  if (state is SocialPostDeleted) {
+                    context.read<SocialCubit>().loadFeed();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Post deleted'),
+                        backgroundColor: Color(0xFF00E5C1),
+                      ),
+                    );
+                  }
+                  if (state is SocialPostUpdated) {
+                    context.read<SocialCubit>().loadFeed();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Post updated'),
                         backgroundColor: Color(0xFF00E5C1),
                       ),
                     );
@@ -394,7 +413,7 @@ class _InteractivePostCardState extends State<InteractivePostCard> {
                   ],
                 ),
               ),
-              const Icon(Icons.more_horiz, color: Colors.white24),
+              _buildPostOptionsMenu(post),
             ],
           ),
 
@@ -484,6 +503,198 @@ class _InteractivePostCardState extends State<InteractivePostCard> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPostOptionsMenu(PostModel post) {
+    final authCubit = context.read<AuthCubit>();
+    final isMyPost = post.authorId != null &&
+        post.authorId == authCubit.userData?['id'];
+
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_horiz, color: Colors.white24),
+      color: const Color(0xFF1E262A),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      onSelected: (value) {
+        switch (value) {
+          case 'edit':
+            _showEditPostDialog(post);
+            break;
+          case 'delete':
+            _showDeleteConfirmation(post);
+            break;
+        }
+      },
+      itemBuilder: (context) {
+        final items = <PopupMenuEntry<String>>[];
+
+        if (isMyPost) {
+          items.addAll([
+            const PopupMenuItem<String>(
+              value: 'edit',
+              child: Row(
+                children: [
+                  Icon(Icons.edit_outlined, color: Color(0xFF00E5C1), size: 18),
+                  SizedBox(width: 10),
+                  Text('Edit Post',
+                      style: TextStyle(color: Colors.white, fontSize: 14)),
+                ],
+              ),
+            ),
+            const PopupMenuItem<String>(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                  SizedBox(width: 10),
+                  Text('Delete Post',
+                      style: TextStyle(color: Colors.redAccent, fontSize: 14)),
+                ],
+              ),
+            ),
+          ]);
+        } else {
+          items.add(
+            const PopupMenuItem<String>(
+              value: 'report',
+              child: Row(
+                children: [
+                  Icon(Icons.flag_outlined, color: Colors.white60, size: 18),
+                  SizedBox(width: 10),
+                  Text('Report',
+                      style: TextStyle(color: Colors.white60, fontSize: 14)),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return items;
+      },
+    );
+  }
+
+  void _showEditPostDialog(PostModel post) {
+    final editController = TextEditingController(text: post.content ?? '');
+    bool isEditing = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF0F1315),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Edit Post',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: TextField(
+            controller: editController,
+            maxLines: 5,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: "What's on your mind?",
+              hintStyle: const TextStyle(color: Colors.white24),
+              filled: true,
+              fillColor: const Color(0xFF1E262A),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Colors.white60)),
+            ),
+            TextButton(
+              onPressed: isEditing
+                  ? null
+                  : () async {
+                      final newContent = editController.text.trim();
+                      if (newContent.isEmpty) return;
+
+                      setDialogState(() => isEditing = true);
+
+                      try {
+                        final cubit = this.context.read<SocialCubit>();
+                        await cubit.editPost(post.id!, newContent);
+                        if (dialogContext.mounted) {
+                          Navigator.pop(dialogContext);
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            SnackBar(
+                                content:
+                                    Text('Failed to edit: ${e.toString()}')),
+                          );
+                        }
+                      } finally {
+                        if (dialogContext.mounted) {
+                          setDialogState(() => isEditing = false);
+                        }
+                      }
+                    },
+              child: isEditing
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Color(0xFF00E5C1)),
+                    )
+                  : const Text('Save',
+                      style: TextStyle(
+                          color: Color(0xFF00E5C1),
+                          fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(PostModel post) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF0F1315),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Post',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Are you sure you want to delete this post? This action cannot be undone.',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.white60)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              try {
+                final cubit = context.read<SocialCubit>();
+                await cubit.deletePost(post.id!);
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text('Failed to delete: ${e.toString()}')),
+                  );
+                }
+              }
+            },
+            child: const Text('Delete',
+                style: TextStyle(
+                    color: Colors.redAccent, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

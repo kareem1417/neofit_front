@@ -107,4 +107,79 @@ class SocialService {
 
     return CommentModel.fromJson(response.data['data']);
   }
+
+  // ==========================================
+  // Edit & Delete Post
+  // ==========================================
+
+  Future<PostModel> editPost(String postId, String content) async {
+    try {
+      final response = await apiClient.dio.patch(
+        '/api/social/posts/$postId',
+        data: {'content': content},
+      );
+
+      if (response.data['success'] == true) {
+        return PostModel.fromJson(response.data['data']);
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to edit post');
+      }
+    } catch (e) {
+      print('❌ Edit post error: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deletePost(String postId) async {
+    try {
+      final response = await apiClient.dio.delete(
+        '/api/social/posts/$postId',
+      );
+
+      if (response.data['success'] != true) {
+        throw Exception(response.data['message'] ?? 'Failed to delete post');
+      }
+    } catch (e) {
+      print('❌ Delete post error: $e');
+      rethrow;
+    }
+  }
+
+  // ==========================================
+  // Edit & Delete Comment
+  // ==========================================
+
+  Future<CommentModel> editComment(
+      String postId, String commentId, String content) async {
+    try {
+      final response = await apiClient.dio.put(
+        '/api/social/posts/$postId/comments/$commentId',
+        data: {'content': content},
+      );
+
+      if (response.data['success'] == true) {
+        return CommentModel.fromJson(response.data['data']);
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to edit comment');
+      }
+    } catch (e) {
+      print('❌ Edit comment error: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteComment(String postId, String commentId) async {
+    try {
+      final response = await apiClient.dio.delete(
+        '/api/social/posts/$postId/comments/$commentId',
+      );
+
+      if (response.data['success'] != true) {
+        throw Exception(response.data['message'] ?? 'Failed to delete comment');
+      }
+    } catch (e) {
+      print('❌ Delete comment error: $e');
+      rethrow;
+    }
+  }
 }

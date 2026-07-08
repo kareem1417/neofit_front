@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../auth/logic/auth_cubit.dart';
 import '../../auth/logic/auth_state.dart';
-// 📌 المسار ده بتاع شاشة البروفايل اللي اليوزر هيروحها بعد ما يخلص خالص
-import '../../profile/ui/profile_screen.dart';
+// 📌 Navigate to MainDashboardScreen after onboarding
+import '../../main_layout/ui/main_dashboard_screen.dart';
 
 class AthleteDetailsScreen extends StatefulWidget {
   const AthleteDetailsScreen({super.key});
@@ -103,7 +103,7 @@ class _AthleteDetailsScreenState extends State<AthleteDetailsScreen> {
 
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            MaterialPageRoute(builder: (context) => const MainDashboardScreen()),
             (route) => false,
           );
         } else if (state is AuthError) {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import '../../../data/post_model.dart';
 import '../logic/social_cubit.dart';
 import '../../auth/logic/auth_cubit.dart'; // مسار الـ AuthCubit بتاعك
@@ -191,6 +190,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           itemCount: _comments.length,
                           itemBuilder: (context, index) {
                             final comment = _comments[index];
+                            final isMyComment = comment.authorId != null &&
+                                comment.authorId ==
+                                    authCubit.userData?['id'];
+
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 16),
                               child: Row(
@@ -254,6 +257,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                       ],
                                     ),
                                   ),
+                                  if (isMyComment)
+                                    _buildCommentOptionsMenu(comment, index),
                                 ],
                               ),
                             );
@@ -327,4 +332,181 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
       },
     );
   }
+
+  Widget _buildCommentOptionsMenu(CommentModel comment, int index) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, color: Colors.white24, size: 18),
+      color: const Color(0xFF1E262A),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      onSelected: (value) {
+        switch (value) {
+          case 'edit':
+            _showEditCommentDialog(comment, index);
+            break;
+          case 'delete':
+            _showDeleteCommentConfirmation(comment, index);
+            break;
+        }
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem<String>(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, color: Color(0xFF00E5C1), size: 16),
+              SizedBox(width: 8),
+              Text('Edit',
+                  style: TextStyle(color: Colors.white, fontSize: 13)),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
+              SizedBox(width: 8),
+              Text('Delete',
+                  style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showEditCommentDialog(CommentModel comment, int index) {
+    final editController = TextEditingController(text: comment.content ?? '');
+    bool isEditing = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF0F1315),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Edit Comment',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: TextField(
+            controller: editController,
+            maxLines: 3,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: 'Edit your comment...',
+              hintStyle: const TextStyle(color: Colors.white24),
+              filled: true,
+              fillColor: const Color(0xFF1E262A),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Colors.white60)),
+            ),
+            TextButton(
+              onPressed: isEditing
+                  ? null
+                  : () async {
+                      final newContent = editController.text.trim();
+                      if (newContent.isEmpty) return;
+
+                      setDialogState(() => isEditing = true);
+
+                      try {
+                        final cubit = this.context.read<SocialCubit>();
+                        final updated = await cubit.editComment(
+                          widget.post.id!,
+                          comment.id!,
+                          newContent,
+                        );
+                        setState(() {
+                          _comments[index] = updated;
+                        });
+                        if (dialogContext.mounted) {
+                          Navigator.pop(dialogContext);
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Failed to edit comment')),
+                          );
+                        }
+                      } finally {
+                        if (dialogContext.mounted) {
+                          setDialogState(() => isEditing = false);
+                        }
+                      }
+                    },
+              child: isEditing
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Color(0xFF00E5C1)),
+                    )
+                  : const Text('Save',
+                      style: TextStyle(
+                          color: Color(0xFF00E5C1),
+                          fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteCommentConfirmation(CommentModel comment, int index) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF0F1315),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Comment',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Are you sure you want to delete this comment?',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.white60)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              try {
+                final cubit = context.read<SocialCubit>();
+                await cubit.deleteComment(widget.post.id!, comment.id!);
+                setState(() {
+                  _comments.removeAt(index);
+                  widget.post.commentsCount =
+                      (widget.post.commentsCount ?? 1) - 1;
+                });
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Failed to delete comment')),
+                  );
+                }
+              }
+            },
+            child: const Text('Delete',
+                style: TextStyle(
+                    color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 }
+

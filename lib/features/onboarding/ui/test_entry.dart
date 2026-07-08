@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../auth/logic/auth_cubit.dart';
 import '../../auth/logic/auth_state.dart';
-import '../../profile/ui/profile_screen.dart';
+import '../../main_layout/ui/main_dashboard_screen.dart';
 
 class TestEntryScreen extends StatefulWidget {
   final int sportId;
@@ -57,7 +57,7 @@ class _TestEntryScreenState extends State<TestEntryScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Data Saved!")));
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                  MaterialPageRoute(builder: (context) => const MainDashboardScreen()),
                   (route) => false,
                 );
               }

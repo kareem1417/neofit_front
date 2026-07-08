@@ -1,5 +1,4 @@
 // lib/features/onboarding/logic/user_state.dart
-import 'package:flutter/material.dart';
 
 abstract class UserState {}
 

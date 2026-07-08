@@ -37,3 +37,22 @@ class SocialError extends SocialState {
   @override
   List<Object?> get props => [message];
 }
+
+class SocialPostUpdated extends SocialState {
+  final PostModel post;
+
+  const SocialPostUpdated(this.post);
+
+  @override
+  List<Object?> get props => [post];
+}
+
+class SocialPostDeleted extends SocialState {
+  final String postId;
+
+  const SocialPostDeleted(this.postId);
+
+  @override
+  List<Object?> get props => [postId];
+}
+
