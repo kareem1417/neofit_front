@@ -55,7 +55,14 @@ class ExplorePeopleTab extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: state.people.length,
                   itemBuilder: (context, index) {
-                    return PeopleCard(athlete: state.people[index]);
+                    return PeopleCard(
+                      athlete: state.people[index],
+                      onToggleFollow: () {
+                        context
+                            .read<ExploreCubit>()
+                            .toggleFollow(state.people[index]);
+                      },
+                    );
                   },
                 ),
               ),

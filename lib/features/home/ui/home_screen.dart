@@ -10,6 +10,8 @@ import '../logic/social_cubit.dart';
 import '../../../data/post_model.dart';
 import 'comments_bottom_sheet.dart';
 import 'create_post_screen.dart';
+import '../../profile/ui/profile_screen.dart';
+import '../../profile/ui/public_profile_screen.dart';
 
 // import '../../widgets/comments_bottom_sheet.dart'; // Will implement later
 // import '../explore/ai_advisor_chat_screen.dart'; // Will implement later
@@ -378,15 +380,36 @@ class _InteractivePostCardState extends State<InteractivePostCard> {
           // Header
           Row(
             children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundImage: post.author?.profilePhoto != null
-                    ? NetworkImage(
-                        'http://192.168.1.8:3000${post.author!.profilePhoto}',
-                      )
-                    : const NetworkImage(
-                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200',
-                      ) as ImageProvider,
+              // Wrap CircleAvatar with GestureDetector for navigation
+              GestureDetector(
+                onTap: () {
+                  final authCubit = context.read<AuthCubit>();
+                  final authorId = post.author?.id ?? post.authorId;
+                  final myId = authCubit.userData?['id']?.toString();
+
+                  if (authorId == null || authorId.isEmpty) return;
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => authorId == myId
+                          ? const ProfileScreen()
+                          : PublicProfileScreen(userId: authorId),
+                    ),
+                  );
+                },
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundImage: post.author?.profilePhoto != null
+                      ? NetworkImage(
+                          post.author!.profilePhoto!.startsWith('http')
+                              ? post.author!.profilePhoto!
+                              : 'http://192.168.1.8:3000${post.author!.profilePhoto}',
+                        )
+                      : const NetworkImage(
+                          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200',
+                        ) as ImageProvider,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -511,8 +534,8 @@ class _InteractivePostCardState extends State<InteractivePostCard> {
 
   Widget _buildPostOptionsMenu(PostModel post) {
     final authCubit = context.read<AuthCubit>();
-    final isMyPost = post.authorId != null &&
-        post.authorId == authCubit.userData?['id'];
+    final isMyPost =
+        post.authorId != null && post.authorId == authCubit.userData?['id'];
 
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_horiz, color: Colors.white24),
@@ -609,8 +632,8 @@ class _InteractivePostCardState extends State<InteractivePostCard> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel',
-                  style: TextStyle(color: Colors.white60)),
+              child:
+                  const Text('Cancel', style: TextStyle(color: Colors.white60)),
             ),
             TextButton(
               onPressed: isEditing

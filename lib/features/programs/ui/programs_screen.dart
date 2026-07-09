@@ -18,6 +18,9 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
   late final ProgramsService _programsService;
   late Future<_ProgramsScreenData> _programsFuture;
 
+  // Fallback tests from latest snapshot (used for available programs only)
+  List<Map<String, dynamic>> _fallbackTests = [];
+
   @override
   void initState() {
     super.initState();
@@ -25,6 +28,20 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
       apiClient: context.read<ApiClient>(),
     );
     _programsFuture = _loadPrograms();
+    _loadFallbackTests();
+  }
+
+  Future<void> _loadFallbackTests() async {
+    try {
+      final tests = await _programsService.getAvailableTestsForCurrentUser();
+      if (mounted) {
+        setState(() {
+          _fallbackTests = tests;
+        });
+      }
+    } catch (e) {
+      // Fallback only — primary tests come from enrollment baseline_tests
+    }
   }
 
   Future<_ProgramsScreenData> _loadPrograms() async {
@@ -172,7 +189,12 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
                   ...activePrograms.map(
                     (program) => Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                      child: TrainingProgramCard(program: program),
+                      child: TrainingProgramCard(
+                        program: program,
+                        tests: program.baselineTests.isNotEmpty
+                            ? program.baselineTests
+                            : _fallbackTests,
+                      ),
                     ),
                   ),
                 Padding(
@@ -218,7 +240,10 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
                   ...availablePrograms.map(
                     (program) => Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                      child: TrainingProgramCard(program: program),
+                      child: TrainingProgramCard(
+                        program: program,
+                        tests: _fallbackTests,
+                      ),
                     ),
                   ),
               ],

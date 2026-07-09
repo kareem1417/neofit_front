@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../models/explore_models.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../auth/logic/auth_cubit.dart';
+import '../../../profile/ui/profile_screen.dart';
+import '../../../profile/ui/public_profile_screen.dart';
 
 class PeopleCard extends StatelessWidget {
   final SuggestedAthleteModel athlete;
+  final VoidCallback? onToggleFollow;
 
-  const PeopleCard({super.key, required this.athlete});
+  const PeopleCard({
+    super.key,
+    required this.athlete,
+    this.onToggleFollow,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -61,17 +70,23 @@ class PeopleCard extends StatelessWidget {
           SizedBox(
             height: 34,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: onToggleFollow,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2dd4bf),
-                foregroundColor: Colors.black,
+                backgroundColor: athlete.isFollowedByMe
+                    ? const Color(0xFF18181b)
+                    : const Color(0xFF2dd4bf),
+                foregroundColor:
+                    athlete.isFollowedByMe ? Colors.white : Colors.black,
+                side: athlete.isFollowedByMe
+                    ? BorderSide(color: Colors.white.withValues(alpha: 0.15))
+                    : null,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
               ),
-              child: const Text(
-                'Follow',
-                style: TextStyle(
+              child: Text(
+                athlete.isFollowedByMe ? 'Following' : 'Follow',
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),

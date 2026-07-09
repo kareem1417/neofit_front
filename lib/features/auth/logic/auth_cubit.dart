@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../data/auth_service.dart';
 import 'auth_state.dart';
 import '../../../core/api/api_client.dart';
+import '../../../data/post_model.dart';
 
 class TestsLoaded extends AuthState {
   final List<dynamic> tests;
@@ -42,6 +43,14 @@ class AuthCubit extends Cubit<AuthState> {
   Map<String, dynamic>? userData;
   Map<String, dynamic>? metricsData;
   Map<String, dynamic>? latestSnapshot;
+  List<PostModel> profilePosts = [];
+  List<Map<String, dynamic>> followers = [];
+  List<Map<String, dynamic>> following = [];
+  List<dynamic> initialOnboardingTests = [];
+
+  int followersCount = 0;
+  int followingCount = 0;
+  int postsCount = 0;
 
   List<Map<String, dynamic>> dynamicRadarAxes = [];
   int punchPowerScore = 0;
@@ -53,6 +62,39 @@ class AuthCubit extends Cubit<AuthState> {
 
   List<dynamic> availableSports = [];
   dynamic initialSnapshot;
+  String? _firstNonEmptyString(List<dynamic> values) {
+    for (final value in values) {
+      final stringValue = value?.toString();
+      if (stringValue != null && stringValue.isNotEmpty) {
+        return stringValue;
+      }
+    }
+    return null;
+  }
+
+  String? _currentUserId() {
+    final dashboardUser = dashboardData?['user'];
+
+    return _firstNonEmptyString([
+      userData?['id'],
+      userData?['user_id'],
+      if (dashboardUser is Map) dashboardUser['id'],
+      if (dashboardUser is Map) dashboardUser['user_id'],
+    ]);
+  }
+
+  List<dynamic> _extractProfileList(dynamic data) {
+    if (data is List) return data;
+
+    if (data is Map) {
+      for (final key in ['posts', 'followers', 'following', 'users']) {
+        final value = data[key];
+        if (value is List) return value;
+      }
+    }
+
+    return [];
+  }
 
   AuthCubit(this.authService, this.secureStorage) : super(AuthInitial());
 
@@ -97,6 +139,99 @@ class AuthCubit extends Cubit<AuthState> {
     _selectedSportId = sportId;
     _selectedLevel = level.toLowerCase();
     _selectedPlayerCategory = playerCategory.toLowerCase().replaceAll(' ', '_');
+  }
+
+  Future<void> fetchProfileExtras({bool notify = true}) async {
+    try {
+      final userId = _currentUserId();
+
+      if (userId == null || userId.isEmpty) {
+        return;
+      }
+
+      final results = await Future.wait([
+        authService.apiClient.dio.get(
+          '/api/users/public',
+          queryParameters: {'user_id': userId},
+        ),
+        authService.apiClient.dio.get(
+          '/api/social/users/$userId/posts',
+          queryParameters: {'limit': 30, 'offset': 0},
+        ),
+        authService.apiClient.dio.get(
+          '/api/social/users/$userId/followers',
+          queryParameters: {'limit': 50, 'offset': 0},
+        ),
+        authService.apiClient.dio.get(
+          '/api/social/users/$userId/following',
+          queryParameters: {'limit': 50, 'offset': 0},
+        ),
+        authService.apiClient.dio.get(
+          '/api/athletes/snapshots',
+          queryParameters: {
+            'type': 'initial_onboarding',
+            'limit': 1,
+            'offset': 0,
+          },
+        ),
+      ]);
+
+      final publicProfileData = results[0].data['data'];
+      final publicProfile = publicProfileData is Map
+          ? Map<String, dynamic>.from(publicProfileData)
+          : null;
+
+      followersCount = int.tryParse(
+            (publicProfile?['followers_count'] ?? 0).toString(),
+          ) ??
+          0;
+
+      followingCount = int.tryParse(
+            (publicProfile?['following_count'] ?? 0).toString(),
+          ) ??
+          0;
+
+      final postsData = _extractProfileList(results[1].data['data']);
+      profilePosts = postsData
+          .whereType<Map>()
+          .map((json) => PostModel.fromJson(Map<String, dynamic>.from(json)))
+          .toList();
+
+      postsCount = int.tryParse(
+            (publicProfile?['posts_count'] ?? '').toString(),
+          ) ??
+          profilePosts.length;
+
+      final followersData = _extractProfileList(results[2].data['data']);
+      followers = followersData
+          .whereType<Map>()
+          .map((json) => Map<String, dynamic>.from(json))
+          .toList();
+
+      final followingData = _extractProfileList(results[3].data['data']);
+      following = followingData
+          .whereType<Map>()
+          .map((json) => Map<String, dynamic>.from(json))
+          .toList();
+
+      final snapshotsData = results[4].data['data'] as List<dynamic>? ?? [];
+      if (snapshotsData.isNotEmpty) {
+        final firstSnapshot = Map<String, dynamic>.from(snapshotsData.first);
+        initialOnboardingTests =
+            firstSnapshot['test_values'] as List<dynamic>? ?? [];
+      } else {
+        initialOnboardingTests = [];
+      }
+
+      if (notify) {
+        emit(AuthSuccess(message: 'Profile extras loaded'));
+      }
+    } catch (e) {
+      print('Profile extras error: $e');
+      if (notify) {
+        emit(AuthError(error: e.toString()));
+      }
+    }
   }
 
   Future<void> submitRegistration({required String dateOfBirth}) async {
@@ -254,6 +389,8 @@ class AuthCubit extends Cubit<AuthState> {
       print("Radar: $dynamicRadarAxes");
       print("Punch Power: $punchPowerScore $punchPowerDetails");
 
+      await fetchProfileExtras(notify: false);
+
       emit(AuthSuccess(message: 'Dashboard Loaded'));
     } catch (e) {
       print("Dashboard Error: $e");
@@ -288,12 +425,11 @@ class AuthCubit extends Cubit<AuthState> {
           for (var test in attr['attribute_tests']) {
             test['attribute_name'] = attr['name'];
 
-            final value = snapshotValues
-                .cast<Map<String, dynamic>?>()
-                .firstWhere(
-                  (e) => e?['attribute_test_id'] == test['id'],
-                  orElse: () => null,
-                );
+            final value =
+                snapshotValues.cast<Map<String, dynamic>?>().firstWhere(
+                      (e) => e?['attribute_test_id'] == test['id'],
+                      orElse: () => null,
+                    );
 
             test['current_value'] = value?['value'];
 
@@ -331,6 +467,91 @@ class AuthCubit extends Cubit<AuthState> {
       );
 
       emit(AuthSuccess(message: "Snapshot created"));
+    } catch (e) {
+      emit(AuthError(error: e.toString()));
+    }
+  }
+
+  Future<void> updateBasicProfile({
+    required String username,
+    required String fullName,
+    required String? dateOfBirth,
+    required String bio,
+    required List<String> roleModels,
+    required Map<String, String> socialLinks,
+  }) async {
+    emit(AuthLoading());
+
+    try {
+      final data = {
+        'username': username.trim(),
+        'full_name': fullName.trim(),
+        'bio': bio.trim(),
+        'role_models': roleModels,
+        'social_links': socialLinks,
+        if (dateOfBirth != null && dateOfBirth.isNotEmpty)
+          'date_of_birth': dateOfBirth,
+      };
+
+      await authService.apiClient.dio.patch('/api/users/me', data: data);
+
+      await fetchDashboard();
+
+      emit(AuthSuccess(message: 'Profile updated successfully'));
+    } catch (e) {
+      emit(AuthError(error: e.toString()));
+    }
+  }
+
+  Future<void> updateMetrics({
+    required double height,
+    required double weight,
+    required String goal,
+    required int trainingDays,
+    required double yearsTraining,
+    required bool hasInjury,
+  }) async {
+    emit(AuthLoading());
+
+    try {
+      await authService.apiClient.dio.post(
+        '/api/athletes/metrics',
+        data: {
+          'height_cm': height,
+          'weight_kg': weight,
+          'goal': goal.toLowerCase().replaceAll(' ', '_'),
+          'training_days_per_week': trainingDays,
+          'years_training': yearsTraining,
+          'has_injury_history': hasInjury,
+        },
+      );
+
+      await fetchDashboard();
+
+      emit(AuthSuccess(message: 'Metrics updated successfully'));
+    } catch (e) {
+      emit(AuthError(error: e.toString()));
+    }
+  }
+
+  Future<void> updateSportProfile({
+    required String level,
+    required String playerCategory,
+  }) async {
+    emit(AuthLoading());
+
+    try {
+      await authService.apiClient.dio.patch(
+        '/api/athletes/sport-profile',
+        data: {
+          'level': level.toLowerCase(),
+          'player_category': playerCategory.toLowerCase().replaceAll(' ', '_'),
+        },
+      );
+
+      await fetchDashboard();
+
+      emit(AuthSuccess(message: 'Sport profile updated successfully'));
     } catch (e) {
       emit(AuthError(error: e.toString()));
     }

@@ -42,8 +42,12 @@ class PostModel {
       id: json['id'] ?? json['_id'],
       content: json['content'],
       imagePath: json['imagePath'] ?? json['image_path'],
-      likesCount: json['likesCount'] ?? json['likes_count'] ?? 0,
-      commentsCount: json['commentsCount'] ?? json['comments_count'] ?? 0,
+      likesCount:
+          json['likesCount'] ?? json['likes_count'] ?? json['like_count'] ?? 0,
+      commentsCount: json['commentsCount'] ??
+          json['comments_count'] ??
+          json['comment_count'] ??
+          0,
       isLikedByMe: json['isLikedByMe'] ?? json['is_liked_by_me'] ?? false,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'])

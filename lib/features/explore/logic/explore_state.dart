@@ -20,6 +20,22 @@ class ExploreLoaded extends ExploreState {
     required this.people,
     required this.posts,
   });
+
+  ExploreLoaded copyWith({
+    List<ProgramModel>? programs,
+    List<ProgramModel>? detailedPrograms,
+    List<SuggestedAthleteModel>? athletes,
+    List<SuggestedAthleteModel>? people,
+    List<ExplorePostModel>? posts,
+  }) {
+    return ExploreLoaded(
+      programs: programs ?? this.programs,
+      detailedPrograms: detailedPrograms ?? this.detailedPrograms,
+      athletes: athletes ?? this.athletes,
+      people: people ?? this.people,
+      posts: posts ?? this.posts,
+    );
+  }
 }
 
 class ExploreError extends ExploreState {

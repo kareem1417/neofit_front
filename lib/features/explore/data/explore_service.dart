@@ -22,31 +22,59 @@ class ExploreService {
         .toList();
   }
 
-  Future<List<SuggestedAthleteModel>> getPeople({int limit = 12}) async {
+  Future<List<SuggestedAthleteModel>> getPeople({
+    int limit = 12,
+    int offset = 0,
+    String? query,
+  }) async {
     final response = await apiClient.dio.get(
-      '/api/leaderboard/most_improved',
+      '/api/social/explore/people',
       queryParameters: {
         'limit': limit,
-        'offset': 0,
+        'offset': offset,
+        if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
       },
     );
 
-    final List<dynamic> data = response.data as List<dynamic>;
+    final responseData = response.data;
+    final List<dynamic> data = responseData is Map<String, dynamic>
+        ? responseData['data'] as List<dynamic>? ?? []
+        : responseData as List<dynamic>? ?? [];
+
     return data
         .map(
-          (e) => SuggestedAthleteModel.fromMostImprovedJson(
+          (e) => SuggestedAthleteModel.fromExplorePeopleJson(
             Map<String, dynamic>.from(e),
           ),
         )
         .toList();
   }
 
-  Future<List<ExplorePostModel>> getPosts({int limit = 6}) async {
+  Future<void> followUser(String userId) async {
+    await apiClient.dio.post('/api/social/follow/$userId');
+  }
+
+  Future<void> unfollowUser(String userId) async {
+    await apiClient.dio.delete('/api/social/follow/$userId');
+  }
+
+  Future<void> likePost(String postId) async {
+    await apiClient.dio.post('/api/social/posts/$postId/like');
+  }
+
+  Future<void> unlikePost(String postId) async {
+    await apiClient.dio.delete('/api/social/posts/$postId/like');
+  }
+
+  Future<List<ExplorePostModel>> getPosts({
+    int limit = 6,
+    int offset = 0,
+  }) async {
     final response = await apiClient.dio.get(
       '/api/social/feed',
       queryParameters: {
         'limit': limit,
-        'offset': 0,
+        'offset': offset,
       },
     );
 

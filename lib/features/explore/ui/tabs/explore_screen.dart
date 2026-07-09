@@ -7,6 +7,8 @@ import '../../logic/explore_cubit.dart';
 import 'explore_people_tab.dart';
 import 'explore_programs_tab.dart';
 import 'explore_top_tab.dart';
+import 'explore_posts_tab.dart';
+
 import '../../../programs/explore/ai_advisor_chat_screen.dart';
 
 class ExploreScreen extends StatelessWidget {
@@ -110,12 +112,7 @@ class ExploreScreen extends StatelessWidget {
               ExploreTopTab(),
               ExplorePeopleTab(),
               ExploreProgramsTab(),
-              Center(
-                child: Text(
-                  'POSTS',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
+              ExplorePostsTab(),
             ],
           ),
           floatingActionButton: FloatingActionButton(

@@ -152,7 +152,7 @@ class SocialService {
   Future<CommentModel> editComment(
       String postId, String commentId, String content) async {
     try {
-      final response = await apiClient.dio.put(
+      final response = await apiClient.dio.patch(
         '/api/social/posts/$postId/comments/$commentId',
         data: {'content': content},
       );

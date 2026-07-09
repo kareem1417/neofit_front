@@ -26,7 +26,7 @@ class ExploreTopTab extends StatelessWidget {
               const SizedBox(height: 24),
               _buildSectionHeader('Suggested Athletes', () {}),
               const SizedBox(height: 12),
-              _buildAthletesList(state.athletes),
+              _buildAthletesList(context, state.athletes),
               const SizedBox(height: 24),
               _buildSectionHeader('Trending Posts', () {}),
               const SizedBox(height: 12),
@@ -162,7 +162,10 @@ class ExploreTopTab extends StatelessWidget {
     );
   }
 
-  Widget _buildAthletesList(List<SuggestedAthleteModel> athletes) {
+  Widget _buildAthletesList(
+    BuildContext context,
+    List<SuggestedAthleteModel> athletes,
+  ) {
     return SizedBox(
       height: 150,
       child: ListView.builder(
@@ -217,19 +220,30 @@ class ExploreTopTab extends StatelessWidget {
                   width: double.infinity,
                   height: 28,
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      context.read<ExploreCubit>().toggleFollow(athlete);
+                    },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2dd4bf),
-                      foregroundColor: Colors.black,
+                      backgroundColor: athlete.isFollowedByMe
+                          ? const Color(0xFF18181b)
+                          : const Color(0xFF2dd4bf),
+                      foregroundColor:
+                          athlete.isFollowedByMe ? Colors.white : Colors.black,
+                      side: athlete.isFollowedByMe
+                          ? BorderSide(
+                              color: Colors.white.withValues(alpha: 0.15))
+                          : null,
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: const Text(
-                      'Follow',
-                      style:
-                          TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    child: Text(
+                      athlete.isFollowedByMe ? 'Following' : 'Follow',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),

@@ -4,6 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 // ⚠️ غير المسار ده لمسار ملف AuthCubit بتاعك صح لو مختلف
 import '../../auth/logic/auth_cubit.dart';
 import '../../onboarding/ui/test_entry.dart';
+import '../../../data/post_model.dart';
+import '../../auth/logic/auth_state.dart';
+import 'edit_profile_screen.dart';
+import '../../main_layout/ui/main_dashboard_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onGoHome;
@@ -40,12 +44,33 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     // تشغيل الأنيميشن أول ما الشاشة تفتح
     _animationController.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final cubit = context.read<AuthCubit>();
+      cubit.userData == null
+          ? cubit.fetchDashboard()
+          : cubit.fetchProfileExtras();
+    });
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  void _goHome() {
+    if (widget.onGoHome != null) {
+      widget.onGoHome!();
+      return;
+    }
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const MainDashboardScreen()),
+      (route) => false,
+    );
   }
 
   @override
@@ -77,11 +102,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                       const SizedBox(height: 30),
                       _buildTabSwitcher(),
                       const SizedBox(height: 30),
-                      _buildAthleticProfileSection(cubit),
-                      const SizedBox(height: 24),
-                      _buildGoalAnalysisSection(cubit),
-                      const SizedBox(height: 24),
-                      _buildProgramHistorySection(),
+                      if (_selectedTabIndex == 0) ...[
+                        _buildMetricsAndSportSection(cubit),
+                        const SizedBox(height: 24),
+                        _buildAthleticProfileSection(cubit),
+                        const SizedBox(height: 24),
+                        _buildGoalAnalysisSection(cubit),
+                        const SizedBox(height: 24),
+                        _buildInitialOnboardingTestsSection(cubit),
+                        const SizedBox(height: 24),
+                        _buildProgramHistorySection(),
+                      ] else ...[
+                        _buildProfilePostsSection(cubit),
+                      ],
                       const SizedBox(height: 40),
                     ],
                   ),
@@ -114,7 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
           IconButton(
-            onPressed: widget.onGoHome,
+            onPressed: _goHome,
             icon: const Icon(
               Icons.home_outlined,
               color: Colors.white60,
@@ -200,12 +233,190 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         const SizedBox(height: 16),
         Text(
-          // ✅ البايو الحقيقي
           cubit.bio ?? 'Relentless pressure. Aiming for the pros.',
           textAlign: TextAlign.center,
           style: const TextStyle(color: Colors.white70, fontSize: 14),
         ),
+        const SizedBox(height: 16),
+        _buildSmallButton(
+          'Edit Profile',
+          Icons.edit_outlined,
+          () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const EditProfileScreen(),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+        _buildSocialStats(cubit),
       ],
+    );
+  }
+
+  Widget _buildSocialStats(AuthCubit cubit) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildStatItem(
+          value: cubit.postsCount.toString(),
+          label: 'Posts',
+          onTap: () async {
+            await cubit.fetchProfileExtras();
+            if (!mounted) return;
+            setState(() => _selectedTabIndex = 1);
+          },
+        ),
+        const SizedBox(width: 28),
+        _buildStatItem(
+          value: cubit.followersCount.toString(),
+          label: 'Followers',
+          onTap: () async {
+            await cubit.fetchProfileExtras();
+            if (!mounted) return;
+            _showUsersSheet('Followers', cubit.followers);
+          },
+        ),
+        _buildStatItem(
+          value: cubit.followingCount.toString(),
+          label: 'Following',
+          onTap: () async {
+            await cubit.fetchProfileExtras();
+            if (!mounted) return;
+            _showUsersSheet('Following', cubit.following);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatItem({
+    required String value,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white38,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUsersSheet(String title, List<Map<String, dynamic>> users) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF09090b),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.65,
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Montserrat',
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: users.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No users yet',
+                            style: TextStyle(color: Colors.white38),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: users.length,
+                          itemBuilder: (context, index) {
+                            final user = users[index];
+                            final photo = user['profile_photo']?.toString();
+                            final username =
+                                user['username']?.toString() ?? 'Unknown';
+                            final level = user['level']?.toString() ??
+                                user['role']?.toString() ??
+                                'Athlete';
+
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: const Color(0xFF2dd4bf)
+                                    .withValues(alpha: 0.12),
+                                backgroundImage:
+                                    photo != null && photo.isNotEmpty
+                                        ? NetworkImage(photo)
+                                        : null,
+                                child: photo == null || photo.isEmpty
+                                    ? Text(
+                                        username.isNotEmpty
+                                            ? username[0].toUpperCase()
+                                            : 'A',
+                                        style: const TextStyle(
+                                          color: Color(0xFF2dd4bf),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              title: Text(
+                                username,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                level,
+                                style: const TextStyle(color: Colors.white38),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -257,6 +468,126 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMetricsAndSportSection(AuthCubit cubit) {
+    final metrics = cubit.metricsData ?? {};
+    final user = cubit.userData ?? {};
+    final profiles = user['sport_profiles'] as List? ??
+        user['user_sport_profiles'] as List? ??
+        [];
+
+    final profile = profiles.isNotEmpty
+        ? Map<String, dynamic>.from(profiles.first)
+        : <String, dynamic>{};
+
+    final sport = profile['sports']?['name']?.toString() ??
+        profile['sport_name']?.toString() ??
+        'Unknown Sport';
+
+    final goal = metrics['goal']?.toString().replaceAll('_', ' ') ?? 'No goal';
+
+    return _buildCardWrapper(
+      title: 'BODY, SPORT & GOAL',
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F1315),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF1E262A)),
+        ),
+        child: Column(
+          children: [
+            _buildInfoRow('Sport', sport),
+            _buildInfoRow('Goal', goal),
+            _buildInfoRow(
+              'Height',
+              metrics['height_cm'] != null
+                  ? '${metrics['height_cm']} cm'
+                  : '--',
+            ),
+            _buildInfoRow(
+              'Weight',
+              metrics['weight_kg'] != null
+                  ? '${metrics['weight_kg']} kg'
+                  : '--',
+            ),
+            _buildInfoRow(
+              'Training days',
+              metrics['training_days_per_week']?.toString() ?? '--',
+            ),
+            _buildInfoRow(
+              'Years training',
+              metrics['years_training']?.toString() ?? '--',
+            ),
+            _buildInfoRow(
+              'Injury history',
+              metrics['has_injury_history'] == true ? 'Yes' : 'No',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white38,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInitialOnboardingTestsSection(AuthCubit cubit) {
+    final tests = cubit.initialOnboardingTests;
+
+    return _buildCardWrapper(
+      title: 'INITIAL ONBOARDING TESTS',
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F1315),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF1E262A)),
+        ),
+        child: tests.isEmpty
+            ? const Text(
+                'No onboarding tests found.',
+                style: TextStyle(color: Colors.white38),
+              )
+            : Column(
+                children: tests.map((raw) {
+                  final test = Map<String, dynamic>.from(raw);
+                  final name = test['test_name']?.toString() ?? 'Test';
+                  final value = test['value']?.toString() ?? '--';
+                  final unit = test['unit']?.toString() ?? '';
+
+                  return _buildInfoRow(name, '$value $unit');
+                }).toList(),
+              ),
       ),
     );
   }
@@ -402,6 +733,109 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildProfilePostsSection(AuthCubit cubit) {
+    final posts = cubit.profilePosts;
+
+    if (posts.isEmpty) {
+      if (cubit.state is AuthLoading) {
+        return const Padding(
+          padding: EdgeInsets.only(top: 40),
+          child: Center(
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        );
+      }
+
+      return const Padding(
+        padding: EdgeInsets.only(top: 40),
+        child: Center(
+          child: Text(
+            'No posts yet.',
+            style: TextStyle(color: Colors.white38),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: posts.map((post) => _buildProfilePostCard(post)).toList(),
+    );
+  }
+
+  Widget _buildProfilePostCard(PostModel post) {
+    final image = post.imagePath;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F1315),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF1E262A)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if ((post.content ?? '').trim().isNotEmpty)
+            Text(
+              post.content!,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+          if (image != null && image.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                image,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                post.isLikedByMe == true
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                color: post.isLikedByMe == true
+                    ? Colors.redAccent
+                    : Colors.white38,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${post.likesCount ?? 0}',
+                style: const TextStyle(color: Colors.white38),
+              ),
+              const SizedBox(width: 18),
+              const Icon(
+                Icons.chat_bubble_outline,
+                color: Colors.white38,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${post.commentsCount ?? 0}',
+                style: const TextStyle(color: Colors.white38),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
