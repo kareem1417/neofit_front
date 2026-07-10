@@ -6,6 +6,7 @@ import '../../../data/training_program_model.dart';
 import '../data/programs_service.dart';
 import '../explore/ai_advisor_chat_screen.dart';
 import 'widgets/training_program_card.dart';
+import '../../ai_advisor/presentation/ai_recommendation_input_screen.dart';
 
 class ProgramsScreen extends StatefulWidget {
   const ProgramsScreen({super.key});
@@ -251,20 +252,37 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AiAdvisorChatScreen(),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: accentColor.withValues(alpha: 0.35),
+              blurRadius: 24,
+              spreadRadius: 2,
             ),
-          );
-        },
-        backgroundColor: fabBgColor,
-        shape: const CircleBorder(),
-        child: const Icon(
-          Icons.auto_awesome,
-          color: accentColor,
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          heroTag: 'program_ai_match_fab',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AiRecommendationInputScreen(),
+              ),
+            );
+          },
+          backgroundColor: fabBgColor,
+          foregroundColor: accentColor,
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text(
+            'AI MATCH',
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.7,
+            ),
+          ),
         ),
       ),
     );

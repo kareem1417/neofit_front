@@ -6,6 +6,7 @@ import '../../home/ui/home_screen.dart';
 import '../../profile/ui/profile_screen.dart';
 import '../../programs/ui/programs_screen.dart';
 import '../../explore/ui/tabs/explore_screen.dart';
+import '../../leaderboard/ui/leaderboard_screen.dart';
 
 class MainDashboardScreen extends StatefulWidget {
   const MainDashboardScreen({super.key});
@@ -32,9 +33,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
         const HomeScreen(),
         const ExploreScreen(),
         const ProgramsScreen(),
-        const Center(
-          child: Text('RANK', style: TextStyle(color: Colors.white)),
-        ),
+        const LeaderboardScreen(),
         ProfileScreen(
           onGoHome: () {
             setState(() {

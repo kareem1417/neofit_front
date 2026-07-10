@@ -12,6 +12,7 @@ import 'comments_bottom_sheet.dart';
 import 'create_post_screen.dart';
 import '../../profile/ui/profile_screen.dart';
 import '../../profile/ui/public_profile_screen.dart';
+import '../../programs/explore/ai_advisor_chat_screen.dart';
 
 // import '../../widgets/comments_bottom_sheet.dart'; // Will implement later
 // import '../explore/ai_advisor_chat_screen.dart'; // Will implement later
@@ -159,16 +160,34 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // AI Advisor - will implement later
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('AI Advisor Screen coming soon!')),
-          );
-        },
-        backgroundColor: const Color(0xFF18181b),
-        shape: const CircleBorder(),
-        child: const Icon(Icons.auto_awesome, color: Color(0xFF2DD4BF)),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2DD4BF).withValues(alpha: 0.35),
+              blurRadius: 24,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          heroTag: 'home_ai_advisor_fab',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AiAdvisorChatScreen(),
+              ),
+            );
+          },
+          backgroundColor: const Color(0xFF18181B),
+          shape: const CircleBorder(),
+          child: const Icon(
+            Icons.auto_awesome,
+            color: Color(0xFF2DD4BF),
+          ),
+        ),
       ),
     );
   }

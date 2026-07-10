@@ -7,20 +7,20 @@ class ApiClient {
 
   // Constructor
   ApiClient()
-    : dio = Dio(
-        BaseOptions(
-          // 1. حطينا اللينك بتاع Render
-          baseUrl: 'http://192.168.1.8:3000',
-          // 1. استخدم 10.0.2.2 للمحاكي، أو 127.0.0.1 لو بتشغل على ديسكتوب/ويب
-          // تأكد إن الباك إند سيرفر شغال الأول!
-          // 2. زودنا الوقت لـ 60 ثانية عشان مشكلة الـ Cold Start في السيرفرات المجانية
-          connectTimeout: const Duration(seconds: 60),
-          receiveTimeout: const Duration(seconds: 60),
+      : dio = Dio(
+          BaseOptions(
+            // 1. حطينا اللينك بتاع Render
+            baseUrl: 'http://172.18.0.1:3000',
+            // 1. استخدم 10.0.2.2 للمحاكي، أو 127.0.0.1 لو بتشغل على ديسكتوب/ويب
+            // تأكد إن الباك إند سيرفر شغال الأول!
+            // 2. زودنا الوقت لـ 60 ثانية عشان مشكلة الـ Cold Start في السيرفرات المجانية
+            connectTimeout: const Duration(seconds: 60),
+            receiveTimeout: const Duration(seconds: 60),
 
-          headers: {'Content-Type': 'application/json'},
+            headers: {'Content-Type': 'application/json'},
+          ),
         ),
-      ),
-      secureStorage = const FlutterSecureStorage() {
+        secureStorage = const FlutterSecureStorage() {
     // بننده على الـ Middlewares بتاعتنا أول ما الكلاس يشتغل
     _initializeInterceptors();
   }

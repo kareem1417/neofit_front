@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 // استدعي الشاشات بتاعتك هنا (اتأكد من المسارات)
 import '../../home/ui/home_screen.dart';
 import '../../profile/ui/profile_screen.dart';
+import '../../leaderboard/ui/leaderboard_screen.dart';
 
 class MainLayoutScreen extends StatefulWidget {
   const MainLayoutScreen({super.key});
