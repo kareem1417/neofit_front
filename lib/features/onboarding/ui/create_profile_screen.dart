@@ -5,9 +5,15 @@ import '../logic/user_cubit.dart';
 import '../logic/user_state.dart';
 import '../../auth/logic/auth_cubit.dart';
 import 'AnotherAthleteDetailsScreen.dart';
+import 'coach_details_screen.dart';
 
 class CreateProfileScreen extends StatefulWidget {
-  const CreateProfileScreen({super.key});
+  final bool isCoachFlow;
+
+  const CreateProfileScreen({
+    super.key,
+    this.isCoachFlow = false,
+  });
 
   @override
   State<CreateProfileScreen> createState() => _CreateProfileScreenState();
@@ -45,7 +51,19 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     return BlocConsumer<UserCubit, UserState>(
       listener: (context, state) async {
         if (state is UserSuccess) {
-          await context.read<AuthCubit>().fetchDashboard();
+          final authCubit = context.read<AuthCubit>();
+
+          if (widget.isCoachFlow || authCubit.isCoach) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const CoachDetailsScreen(),
+              ),
+            );
+            return;
+          }
+
+          await authCubit.fetchDashboard();
 
           if (!context.mounted) return;
 

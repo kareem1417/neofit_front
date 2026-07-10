@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../main_layout/ui/coach_dashboard_screen.dart';
 
 // اتأكد إن مسار الـ HomeScreen أو الـ MainLayoutScreen صح
 import '../../main_layout/ui/main_dashboard_screen.dart';
@@ -33,13 +34,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state is AuthSuccess) {
-          // ✅ تم مسح الـ BlocProvider ونقلنا للشاشة الرئيسية مباشر
+        if (state is AuthSuccess && state.message == 'Logged in successfully') {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  const MainDashboardScreen(), // أو MainLayoutScreen لو عملتها
+              builder: (_) {
+                final isCoach = context.read<AuthCubit>().isCoach;
+
+                return isCoach
+                    ? const CoachDashboardScreen()
+                    : const MainDashboardScreen();
+              },
             ),
             (route) => false,
           );

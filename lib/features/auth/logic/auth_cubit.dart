@@ -22,10 +22,20 @@ class AuthCubit extends Cubit<AuthState> {
   String? _email;
   String? _password;
   String _role = 'athlete';
+
+  String get role => _role;
+  bool get isCoach => _role == 'coach';
+  bool get isAthlete => _role == 'athlete';
+
+  String? coachSport;
+  String? coachLevel;
+  List<dynamic> coachSports = [];
   String? _dob;
   String? _selectedLevel;
   String? _selectedPlayerCategory;
   int? _selectedSportId;
+
+  String? coachSportId;
 
   // ==========================================
   // Dashboard & Profile Variables (Public for UI access)
@@ -62,6 +72,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   List<dynamic> availableSports = [];
   dynamic initialSnapshot;
+
   String? _firstNonEmptyString(List<dynamic> values) {
     for (final value in values) {
       final stringValue = value?.toString();
@@ -104,13 +115,31 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> loginUser(String email, String password) async {
     emit(AuthLoading());
+
     try {
       final response = await authService.login(email, password);
 
-      // ✅ التعديل هنا: جيب التوكن بنفس الطريقة اللي بتجيبه بيها في الـ Register
       final token = response['data']['tokens']['accessToken'];
 
+      final dynamic data = response['data'];
+      final dynamic user = data is Map ? data['user'] : null;
+
+      final returnedRole = user is Map
+          ? user['role']?.toString()
+          : data is Map
+              ? data['role']?.toString()
+              : null;
+
+      if (returnedRole != null && returnedRole.isNotEmpty) {
+        _role = returnedRole.toLowerCase();
+      }
+
       await secureStorage.write(key: 'jwt_token', value: token);
+
+      if (isCoach) {
+        await fetchCoachProfile(emitState: false);
+      }
+
       emit(AuthSuccess(message: 'Logged in successfully'));
     } catch (e) {
       emit(AuthError(error: e.toString()));
@@ -250,11 +279,23 @@ class AuthCubit extends Cubit<AuthState> {
         dateOfBirth: dateOfBirth,
         role: _role,
       );
-      print("REGISTER RESPONSE:");
 
       final token = response['data']['tokens']['accessToken'];
       await secureStorage.write(key: 'jwt_token', value: token);
-      print("EMITTING SUCCESS");
+
+      final dynamic data = response['data'];
+      final dynamic user = data is Map ? data['user'] : null;
+
+      final returnedRole = user is Map
+          ? user['role']?.toString()
+          : data is Map
+              ? data['role']?.toString()
+              : null;
+
+      if (returnedRole != null && returnedRole.isNotEmpty) {
+        _role = returnedRole.toLowerCase();
+      }
+
       emit(AuthSuccess(message: 'Account created successfully!'));
     } catch (e) {
       print("REGISTER ERROR: $e");
@@ -401,6 +442,95 @@ class AuthCubit extends Cubit<AuthState> {
   // ==========================================
   // Snapshots & Tests Flow
   // ==========================================
+
+  Future<void> fetchCoachSports() async {
+    try {
+      final response =
+          await authService.apiClient.dio.get('/api/athletes/sports');
+
+      coachSports = response.data['data'] as List<dynamic>? ?? [];
+
+      emit(SportsLoaded(sports: coachSports));
+    } catch (e) {
+      emit(AuthError(error: e.toString()));
+    }
+  }
+
+  Future<void> fetchCoachProfile({bool emitState = true}) async {
+    if (emitState) emit(AuthLoading());
+
+    try {
+      final meResponse = await authService.apiClient.dio.get('/api/users/me');
+      final meData = meResponse.data['data'];
+
+      if (meData is Map) {
+        userData = Map<String, dynamic>.from(meData);
+
+        username = userData?['username']?.toString();
+        fullName = userData?['full_name']?.toString();
+        profilePhoto = userData?['profile_photo']?.toString();
+        bio = userData?['bio']?.toString();
+
+        final embeddedCoachProfile = userData?['coach_profile'];
+        if (embeddedCoachProfile is Map) {
+          coachSport = embeddedCoachProfile['sport']?.toString();
+          coachLevel = embeddedCoachProfile['level']?.toString();
+        }
+      }
+
+      final profileResponse = await authService.apiClient.dio.get(
+        '/api/coaches/profile',
+      );
+
+      final profileData = profileResponse.data['data'];
+
+      if (profileData is Map) {
+        coachSport = profileData['sport']?.toString();
+        coachLevel = profileData['level']?.toString();
+      }
+
+      if (emitState) {
+        emit(AuthSuccess(message: 'Coach profile loaded'));
+      }
+    } catch (e) {
+      if (emitState) {
+        emit(AuthError(error: e.toString()));
+      }
+    }
+  }
+
+  Future<bool> saveCoachDetails({
+    required String sport,
+    required String level,
+  }) async {
+    emit(AuthLoading());
+
+    try {
+      final response = await authService.apiClient.dio.put(
+        '/api/coaches/profile',
+        data: {
+          'sport': sport,
+          'level': level.toLowerCase(),
+        },
+      );
+
+      final data = response.data['data'];
+
+      if (data is Map) {
+        coachSport = data['sport']?.toString();
+        coachLevel = data['level']?.toString();
+      } else {
+        coachSport = sport;
+        coachLevel = level.toLowerCase();
+      }
+
+      emit(AuthSuccess(message: 'Coach profile saved'));
+      return true;
+    } catch (e) {
+      emit(AuthError(error: e.toString()));
+      return false;
+    }
+  }
 
   Future<void> fetchLatestSnapshot(int sportId) async {
     emit(AuthLoading());

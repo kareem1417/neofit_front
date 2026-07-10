@@ -8,11 +8,18 @@ import '../../../data/post_model.dart';
 import '../../auth/logic/auth_state.dart';
 import 'edit_profile_screen.dart';
 import '../../main_layout/ui/main_dashboard_screen.dart';
+import '../../main_layout/ui/coach_dashboard_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onGoHome;
+  final bool isCoach;
 
-  const ProfileScreen({super.key, this.onGoHome});
+  const ProfileScreen({
+    super.key,
+    this.onGoHome,
+    this.isCoach = false,
+  });
+
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
@@ -48,6 +55,22 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (!mounted) return;
 
       final cubit = context.read<AuthCubit>();
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        final cubit = context.read<AuthCubit>();
+
+        if (widget.isCoach) {
+          cubit.fetchCoachProfile();
+          return;
+        }
+
+        cubit.userData == null
+            ? cubit.fetchDashboard()
+            : cubit.fetchProfileExtras();
+      });
+
       cubit.userData == null
           ? cubit.fetchDashboard()
           : cubit.fetchProfileExtras();
@@ -68,8 +91,91 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const MainDashboardScreen()),
+      MaterialPageRoute(
+        builder: (_) => widget.isCoach
+            ? const CoachDashboardScreen()
+            : const MainDashboardScreen(),
+      ),
       (route) => false,
+    );
+  }
+
+  Widget _buildCoachProgramsSection() {
+    final cubit = context.watch<AuthCubit>();
+
+    return _buildCardWrapper(
+      title: 'COACH PROFILE',
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F1315),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF1E262A)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF070B0D),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.assignment_outlined,
+                    color: Color(0xFF00E5C1),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Your coaching details',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            _buildInfoRow(
+              'Sport',
+              cubit.coachSport != null && cubit.coachSport!.isNotEmpty
+                  ? cubit.coachSport!
+                  : 'Not set',
+            ),
+            _buildInfoRow(
+              'Level',
+              cubit.coachLevel != null && cubit.coachLevel!.isNotEmpty
+                  ? cubit.coachLevel!
+                  : 'Not set',
+            ),
+            const SizedBox(height: 18),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF070B0D),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF1E262A)),
+              ),
+              child: const Text(
+                'Your own programs will appear here after we connect the create program screen.',
+                style: TextStyle(
+                  color: Colors.white54,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -103,18 +209,23 @@ class _ProfileScreenState extends State<ProfileScreen>
                       _buildTabSwitcher(),
                       const SizedBox(height: 30),
                       if (_selectedTabIndex == 0) ...[
-                        _buildMetricsAndSportSection(cubit),
-                        const SizedBox(height: 24),
-                        _buildAthleticProfileSection(cubit),
-                        const SizedBox(height: 24),
-                        _buildGoalAnalysisSection(cubit),
-                        const SizedBox(height: 24),
-                        _buildInitialOnboardingTestsSection(cubit),
-                        const SizedBox(height: 24),
-                        _buildProgramHistorySection(),
+                        if (widget.isCoach) ...[
+                          _buildCoachProgramsSection(),
+                        ] else ...[
+                          _buildMetricsAndSportSection(cubit),
+                          const SizedBox(height: 24),
+                          _buildAthleticProfileSection(cubit),
+                          const SizedBox(height: 24),
+                          _buildGoalAnalysisSection(cubit),
+                          const SizedBox(height: 24),
+                          _buildInitialOnboardingTestsSection(cubit),
+                          const SizedBox(height: 24),
+                          _buildProgramHistorySection(),
+                        ],
                       ] else ...[
                         _buildProfilePostsSection(cubit),
                       ],
+
                       const SizedBox(height: 40),
                     ],
                   ),
@@ -143,7 +254,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           Text(
             // ✅ اليوزرنيم الديناميك
-            '@${cubit.username ?? 'athlete'}',
+            '@${cubit.username ?? (widget.isCoach ? 'coach' : 'athlete')}',
             style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
           IconButton(
@@ -165,10 +276,16 @@ class _ProfileScreenState extends State<ProfileScreen>
         s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : s;
 
     // تظبيط الداتا اللي هتتعرض
-    String level = capitalize(cubit.userLevel ?? 'Amateur');
+    String level = capitalize(
+      widget.isCoach
+          ? (cubit.coachLevel ?? 'Coach')
+          : (cubit.userLevel ?? 'Amateur'),
+    );
+
     String category = capitalize(
       (cubit.userCategory ?? 'Middleweight').replaceAll('_', ' '),
     );
+
     String age = cubit.userAge?.toString() ?? '--';
 
     return Column(
@@ -208,7 +325,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         const SizedBox(height: 16),
         Text(
           // ✅ الاسم الحقيقي
-          cubit.fullName ?? 'Athlete Name',
+          cubit.fullName ?? (widget.isCoach ? 'Coach Name' : 'Athlete Name'),
           style: const TextStyle(
             color: Colors.white,
             fontSize: 24,
@@ -233,7 +350,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         const SizedBox(height: 16),
         Text(
-          cubit.bio ?? 'Relentless pressure. Aiming for the pros.',
+          cubit.bio ??
+              (widget.isCoach
+                  ? 'Building better athletes through smarter training.'
+                  : 'Relentless pressure. Aiming for the pros.'),
           textAlign: TextAlign.center,
           style: const TextStyle(color: Colors.white70, fontSize: 14),
         ),

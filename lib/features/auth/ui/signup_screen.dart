@@ -48,9 +48,12 @@ class _SignupScreenState extends State<SignupScreen> {
             context,
             MaterialPageRoute(
               builder: (_) => BlocProvider(
-                create: (_) =>
-                    UserCubit(apiClient: context.read<AuthCubit>().apiClient),
-                child: const CreateProfileScreen(),
+                create: (_) => UserCubit(
+                  apiClient: context.read<AuthCubit>().apiClient,
+                ),
+                child: CreateProfileScreen(
+                  isCoachFlow: _selectedRole.toLowerCase() == 'coach',
+                ),
               ),
             ),
             (route) => false,
@@ -212,8 +215,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                 ),
                                 validator: (val) =>
                                     val == null || val.length < 3
-                                    ? 'Min 3 chars'
-                                    : null,
+                                        ? 'Min 3 chars'
+                                        : null,
                                 decoration: InputDecoration(
                                   hintText: 'username',
                                   hintStyle: TextStyle(
@@ -367,8 +370,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                 ),
                                 validator: (val) =>
                                     val != null && val.length < 6
-                                    ? 'Min 6 chars'
-                                    : null,
+                                        ? 'Min 6 chars'
+                                        : null,
                                 decoration: _inputDecoration(
                                   hint: '••••••••',
                                   icon: Icons.lock_outline,
@@ -396,8 +399,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                 ),
                                 validator: (val) =>
                                     val != _passwordController.text
-                                    ? 'Passwords do not match'
-                                    : null,
+                                        ? 'Passwords do not match'
+                                        : null,
                                 decoration: _inputDecoration(
                                   hint: '••••••••',
                                   icon: Icons.lock_outline,
@@ -417,7 +420,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                               .validate()) {
                                             // Save data to cubit
                                             cubit.saveSignupData(
-                                              email: _emailController.text,
+                                              email:
+                                                  _emailController.text.trim(),
                                               password:
                                                   _passwordController.text,
                                               role: _selectedRole,
@@ -494,9 +498,8 @@ class _SignupScreenState extends State<SignupScreen> {
           color: isSelected ? const Color(0xFF1E2427) : const Color(0xFF0F1315),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected
-                ? const Color(0xFF38454D)
-                : const Color(0xFF1E262A),
+            color:
+                isSelected ? const Color(0xFF38454D) : const Color(0xFF1E262A),
           ),
         ),
         child: Row(
