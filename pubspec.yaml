@@ -40,6 +40,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Add assets here if you have any
-  # assets:
-  #   - assets/images/
+  assets:
+    - المشروع-1.png

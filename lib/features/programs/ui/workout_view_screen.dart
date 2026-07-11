@@ -6,6 +6,11 @@ import '../../../data/workout_model.dart';
 import '../data/workouts_service.dart';
 import 'program_complete_screen.dart';
 
+import '../../readiness/data/readiness_result.dart';
+import '../../readiness/data/readiness_service.dart';
+import '../../readiness/ui/readiness_check_screen.dart';
+import '../../readiness/ui/readiness_summary_card.dart';
+
 class WorkoutViewScreen extends StatefulWidget {
   final String enrollmentId;
   final String programId;
@@ -29,7 +34,12 @@ class _WorkoutViewScreenState extends State<WorkoutViewScreen> {
   static const Color cardBg = Color(0xFF141415);
 
   late final WorkoutsService _service;
+  late final ReadinessService _readinessService;
+
   late Future<NextWorkoutModel> _future;
+  late Future<ReadinessResult?> _readinessFuture;
+
+  ReadinessResult? _readinessResult;
 
   int _currentExerciseIndex = 0;
   int _rpe = 8;
@@ -41,8 +51,14 @@ class _WorkoutViewScreenState extends State<WorkoutViewScreen> {
   @override
   void initState() {
     super.initState();
-    _service = WorkoutsService(apiClient: context.read<ApiClient>());
+
+    final apiClient = context.read<ApiClient>();
+
+    _service = WorkoutsService(apiClient: apiClient);
+    _readinessService = ReadinessService(apiClient: apiClient);
+
     _future = _service.getNextWorkout(enrollmentId: widget.enrollmentId);
+    _readinessFuture = _readinessService.getTodayReadiness();
   }
 
   @override
@@ -81,6 +97,7 @@ class _WorkoutViewScreenState extends State<WorkoutViewScreen> {
 
   void _removeSet(int exerciseIndex, int setIndex) {
     final sets = _exerciseSetControllers[exerciseIndex];
+
     if (sets == null || sets.length <= 1) return;
 
     setState(() {
@@ -140,7 +157,9 @@ class _WorkoutViewScreenState extends State<WorkoutViewScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Workout completed successfully ✅')),
+        const SnackBar(
+          content: Text('Workout completed successfully ✅'),
+        ),
       );
 
       Navigator.pop(context, true);
@@ -190,6 +209,10 @@ class _WorkoutViewScreenState extends State<WorkoutViewScreen> {
               return _buildError(snapshot.error.toString());
             }
 
+            if (!snapshot.hasData) {
+              return _buildError('No workout data found.');
+            }
+
             final workout = snapshot.data!;
 
             if (workout.isProgramComplete) {
@@ -200,34 +223,78 @@ class _WorkoutViewScreenState extends State<WorkoutViewScreen> {
               return _buildError('No exercises found for this workout.');
             }
 
-            final exercise = workout.exercises[_currentExerciseIndex];
-            _ensureControllersForExercise(_currentExerciseIndex, exercise);
+            return FutureBuilder<ReadinessResult?>(
+              future: _readinessFuture,
+              builder: (context, readinessSnapshot) {
+                if (readinessSnapshot.connectionState ==
+                        ConnectionState.waiting &&
+                    _readinessResult == null) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: primaryCyan),
+                  );
+                }
 
-            return Column(
-              children: [
-                _buildHeader(workout),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildExerciseCard(workout, exercise),
-                        const SizedBox(height: 18),
-                        _buildNavigation(workout),
-                        const SizedBox(height: 24),
-                        _buildSessionFeedback(),
-                        const SizedBox(height: 24),
-                        _buildCompleteButton(workout),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+                if (readinessSnapshot.hasError && _readinessResult == null) {
+                  return _buildError(readinessSnapshot.error.toString());
+                }
+
+                final readiness = _readinessResult ?? readinessSnapshot.data;
+
+                if (readiness == null) {
+                  return ReadinessCheckScreen(
+                    service: _readinessService,
+                    enrollmentId: widget.enrollmentId,
+                    programSessionId: workout.sessionId,
+                    onSubmitted: (result) {
+                      setState(() {
+                        _readinessResult = result;
+                      });
+                    },
+                  );
+                }
+
+                return _buildWorkoutContent(
+                  workout: workout,
+                  readiness: readiness,
+                );
+              },
             );
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildWorkoutContent({
+    required NextWorkoutModel workout,
+    required ReadinessResult readiness,
+  }) {
+    final exercise = workout.exercises[_currentExerciseIndex];
+    _ensureControllersForExercise(_currentExerciseIndex, exercise);
+
+    return Column(
+      children: [
+        _buildHeader(workout),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ReadinessSummaryCard(readiness: readiness),
+                const SizedBox(height: 18),
+                _buildExerciseCard(workout, exercise),
+                const SizedBox(height: 18),
+                _buildNavigation(workout),
+                const SizedBox(height: 24),
+                _buildSessionFeedback(),
+                const SizedBox(height: 24),
+                _buildCompleteButton(workout),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
